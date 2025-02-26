@@ -1,180 +1,142 @@
-import { useEffect, useRef, useState } from 'react';
-import { Box, Typography } from '@mui/material';
-import { motion, useAnimation } from 'framer-motion';
+import { useState } from 'react';
+import { Box, Typography, Paper } from '@mui/material';
+import { motion } from 'framer-motion';
 
 const SkillsOrbit = () => {
-  const orbitRef = useRef(null);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const controls = useAnimation();
+  const [hoveredSkill, setHoveredSkill] = useState(null);
 
   const skills = [
-    { name: 'React', color: '#61DAFB', level: 90 },
-    { name: 'Node.js', color: '#68A063', level: 85 },
-    { name: 'TypeScript', color: '#007ACC', level: 80 },
-    { name: 'Python', color: '#FFD43B', level: 75 },
-    { name: 'MongoDB', color: '#4DB33D', level: 85 },
-    { name: 'GraphQL', color: '#E535AB', level: 70 },
-    { name: 'Docker', color: '#2496ED', level: 75 },
-    { name: 'AWS', color: '#FF9900', level: 80 },
+    {
+      category: 'Languages',
+      items: [
+        { name: 'JavaScript', level: 90 },
+        { name: 'TypeScript', level: 85 },
+        { name: 'Python', level: 80 },
+      ]
+    },
+    {
+      category: 'Frontend',
+      items: [
+        { name: 'React', level: 90 },
+        { name: 'Next.js', level: 85 },
+        { name: 'HTML/CSS', level: 90 },
+      ]
+    },
+    {
+      category: 'Backend',
+      items: [
+        { name: 'Node.js', level: 85 },
+        { name: 'Express', level: 80 },
+        { name: 'Django', level: 75 },
+      ]
+    },
+    {
+      category: 'Database',
+      items: [
+        { name: 'MongoDB', level: 85 },
+        { name: 'PostgreSQL', level: 80 },
+        { name: 'Redis', level: 75 },
+      ]
+    }
   ];
 
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      const rect = orbitRef.current.getBoundingClientRect();
-      const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
-      const y = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
-      setMousePosition({ x, y });
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
   return (
-    <Box
-      ref={orbitRef}
-      sx={{
-        height: '600px',
-        width: '100%',
-        position: 'relative',
-        perspective: '1000px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      {/* Center Sphere */}
+    <Box sx={{ py: 4 }}>
       <motion.div
-        animate={{
-          rotateX: mousePosition.y * 20,
-          rotateY: mousePosition.x * 20,
-        }}
-        style={{
-          width: '100px',
-          height: '100px',
-          borderRadius: '50%',
-          background: 'linear-gradient(45deg, #00f5ff, #ff0099)',
-          boxShadow: '0 0 30px rgba(0,245,255,0.5)',
-          position: 'relative',
-        }}
-      />
-
-      {/* Orbiting Skills */}
-      {skills.map((skill, index) => {
-        const angle = (index / skills.length) * Math.PI * 2;
-        const radius = 200;
-        const x = Math.cos(angle) * radius;
-        const y = Math.sin(angle) * radius;
-
-        return (
-          <motion.div
-            key={skill.name}
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              x: x + mousePosition.x * 20,
-              y: y + mousePosition.y * 20,
-              rotateX: mousePosition.y * 20,
-              rotateY: mousePosition.x * 20,
-            }}
-            transition={{
-              duration: 0.8,
-              delay: index * 0.1,
-              type: 'spring',
-              stiffness: 100,
-            }}
-            style={{
-              position: 'absolute',
-              transform: `translate(-50%, -50%)`,
-            }}
-          >
-            <Box
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
+            gap: 4,
+          }}
+        >
+          {skills.map((skillGroup) => (
+            <Paper
+              key={skillGroup.category}
+              component={motion.div}
+              whileHover={{ scale: 1.02 }}
               sx={{
-                background: 'rgba(10, 15, 45, 0.9)',
+                p: 3,
+                background: 'rgba(10, 15, 45, 0.4)',
                 backdropFilter: 'blur(10px)',
-                borderRadius: '15px',
-                padding: '10px 20px',
-                border: `2px solid ${skill.color}`,
-                boxShadow: `0 0 20px ${skill.color}40`,
+                border: '1px solid rgba(0, 245, 255, 0.1)',
+                borderRadius: 2,
                 transition: 'all 0.3s ease',
-                cursor: 'pointer',
                 '&:hover': {
-                  transform: 'scale(1.1)',
-                  boxShadow: `0 0 30px ${skill.color}80`,
+                  boxShadow: '0 0 30px rgba(0,245,255,0.2)',
+                  borderColor: 'rgba(0, 245, 255, 0.3)',
                 },
               }}
             >
               <Typography
-                variant="body1"
+                variant="h5"
                 sx={{
-                  color: skill.color,
-                  fontWeight: 600,
-                  textShadow: `0 0 10px ${skill.color}80`,
+                  mb: 3,
+                  color: '#00f5ff',
+                  textShadow: '0 0 10px rgba(0,245,255,0.3)',
                 }}
               >
-                {skill.name}
+                {skillGroup.category}
               </Typography>
-              <Box
-                sx={{
-                  width: '100%',
-                  height: '4px',
-                  background: 'rgba(255,255,255,0.1)',
-                  borderRadius: '2px',
-                  mt: 1,
-                  overflow: 'hidden',
-                }}
-              >
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${skill.level}%` }}
-                  transition={{ duration: 1, delay: index * 0.1 }}
-                  style={{
-                    height: '100%',
-                    background: skill.color,
-                    borderRadius: '2px',
-                  }}
-                />
-              </Box>
-            </Box>
-          </motion.div>
-        );
-      })}
 
-      {/* Connecting Lines */}
-      <svg
-        style={{
-          position: 'absolute',
-          width: '100%',
-          height: '100%',
-          pointerEvents: 'none',
-        }}
-      >
-        {skills.map((skill, index) => {
-          const angle = (index / skills.length) * Math.PI * 2;
-          const radius = 200;
-          const x = Math.cos(angle) * radius + 300;
-          const y = Math.sin(angle) * radius + 300;
-
-          return (
-            <motion.line
-              key={`line-${skill.name}`}
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{
-                pathLength: 1,
-                opacity: 0.2,
-              }}
-              transition={{ duration: 1, delay: index * 0.1 }}
-              x1="300"
-              y1="300"
-              x2={x}
-              y2={y}
-              stroke={skill.color}
-              strokeWidth="1"
-            />
-          );
-        })}
-      </svg>
+              {skillGroup.items.map((skill) => (
+                <Box
+                  key={skill.name}
+                  onMouseEnter={() => setHoveredSkill(skill.name)}
+                  onMouseLeave={() => setHoveredSkill(null)}
+                  sx={{ mb: 2, cursor: 'pointer' }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        color: hoveredSkill === skill.name ? '#00f5ff' : 'white',
+                        transition: 'color 0.3s ease',
+                      }}
+                    >
+                      {skill.name}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: hoveredSkill === skill.name ? '#00f5ff' : 'rgba(255,255,255,0.6)',
+                      }}
+                    >
+                      {skill.level}%
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      height: '4px',
+                      background: 'rgba(255,255,255,0.1)',
+                      borderRadius: '2px',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${skill.level}%` }}
+                      transition={{
+                        duration: 1,
+                        ease: 'easeOut',
+                      }}
+                      style={{
+                        height: '100%',
+                        background: 'linear-gradient(90deg, #00f5ff, #ff0099)',
+                        borderRadius: '2px',
+                      }}
+                    />
+                  </Box>
+                </Box>
+              ))}
+            </Paper>
+          ))}
+        </Box>
+      </motion.div>
     </Box>
   );
 };
