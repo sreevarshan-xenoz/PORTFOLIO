@@ -67,34 +67,38 @@ const ProjectCard = ({ project, index }) => {
       <Box
         sx={{
           position: 'relative',
-          background: 'rgba(10, 15, 45, 0.4)',
+          background: 'rgba(10, 15, 45, 0.6)',
           backdropFilter: 'blur(10px)',
           borderRadius: 4,
           overflow: 'hidden',
           transformStyle: 'preserve-3d',
           transition: 'all 0.3s ease',
+          boxShadow: isHovered 
+            ? '0 0 30px rgba(0, 245, 255, 0.2), inset 0 0 30px rgba(0, 245, 255, 0.1)'
+            : '0 0 20px rgba(0, 0, 0, 0.3)',
           '&::before': {
             content: '""',
             position: 'absolute',
             inset: 0,
             background: `linear-gradient(125deg, 
-              rgba(255,255,255,0.1) 0%, 
+              rgba(255,255,255,0.2) 0%, 
               rgba(255,255,255,0.05) 40%, 
               transparent 60%, 
-              rgba(255,255,255,0.05) 100%)`,
+              rgba(255,255,255,0.1) 100%)`,
             opacity: isHovered ? 1 : 0,
             transition: 'opacity 0.3s ease',
           },
           '&::after': {
             content: '""',
             position: 'absolute',
-            inset: -1,
+            inset: -2,
             background: `linear-gradient(125deg,
-              #00f5ff20,
-              #ff009920)`,
+              #00f5ff40,
+              #ff009940)`,
             borderRadius: 4,
             opacity: isHovered ? 1 : 0,
             transition: 'opacity 0.3s ease',
+            zIndex: -1,
           },
         }}
       >
@@ -114,8 +118,22 @@ const ProjectCard = ({ project, index }) => {
               height: '250px',
               objectFit: 'cover',
               borderRadius: '16px 16px 0 0',
-              filter: isHovered ? 'brightness(1.1)' : 'brightness(1)',
-              transition: 'filter 0.3s ease',
+              filter: isHovered ? 'brightness(1.2) contrast(1.1)' : 'brightness(1)',
+              transition: 'all 0.3s ease',
+              border: '1px solid rgba(0, 245, 255, 0.1)',
+            }}
+          />
+          {/* Image Overlay */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '250px',
+              background: 'linear-gradient(180deg, transparent 0%, rgba(10, 15, 45, 0.8) 100%)',
+              opacity: isHovered ? 0.8 : 0.6,
+              transition: 'opacity 0.3s ease',
             }}
           />
         </motion.div>
@@ -126,6 +144,7 @@ const ProjectCard = ({ project, index }) => {
             p: 3,
             transform: isHovered ? 'translateZ(30px)' : 'translateZ(0)',
             transition: 'transform 0.3s ease',
+            background: 'linear-gradient(180deg, rgba(10, 15, 45, 0.4) 0%, rgba(10, 15, 45, 0.8) 100%)',
           }}
         >
           <Typography 
@@ -133,9 +152,13 @@ const ProjectCard = ({ project, index }) => {
             sx={{ 
               mb: 2,
               color: 'primary.main',
-              textShadow: '0 0 10px rgba(0,245,255,0.5)',
+              textShadow: isHovered 
+                ? '0 0 15px rgba(0,245,255,0.8), 0 0 30px rgba(0,245,255,0.4)'
+                : '0 0 10px rgba(0,245,255,0.5)',
               transform: isHovered ? 'translateZ(40px)' : 'translateZ(0)',
-              transition: 'transform 0.3s ease',
+              transition: 'all 0.3s ease',
+              fontWeight: 600,
+              letterSpacing: '0.05em',
             }}
           >
             {project.title}
@@ -145,9 +168,11 @@ const ProjectCard = ({ project, index }) => {
             variant="body2" 
             sx={{ 
               mb: 2,
-              color: 'rgba(255,255,255,0.8)',
+              color: 'rgba(255,255,255,0.9)',
               transform: isHovered ? 'translateZ(35px)' : 'translateZ(0)',
-              transition: 'transform 0.3s ease',
+              transition: 'all 0.3s ease',
+              lineHeight: 1.6,
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)',
             }}
           >
             {project.description}
@@ -159,7 +184,7 @@ const ProjectCard = ({ project, index }) => {
               display: 'flex', 
               flexWrap: 'wrap', 
               gap: 1, 
-              mb: 2,
+              mb: 3,
               transform: isHovered ? 'translateZ(45px)' : 'translateZ(0)',
               transition: 'transform 0.3s ease',
             }}
@@ -170,13 +195,18 @@ const ProjectCard = ({ project, index }) => {
                 label={tech}
                 size="small"
                 sx={{
-                  background: isHovered ? 'rgba(0, 245, 255, 0.2)' : 'rgba(0, 245, 255, 0.1)',
+                  background: isHovered 
+                    ? 'linear-gradient(135deg, rgba(0,245,255,0.2), rgba(255,0,153,0.2))'
+                    : 'rgba(0, 245, 255, 0.1)',
                   color: '#00f5ff',
                   borderRadius: '8px',
                   transition: 'all 0.3s ease',
+                  border: '1px solid rgba(0,245,255,0.3)',
+                  fontWeight: 500,
                   '&:hover': {
                     background: 'rgba(0, 245, 255, 0.3)',
                     transform: 'scale(1.05)',
+                    boxShadow: '0 0 15px rgba(0,245,255,0.3)',
                   },
                 }}
               />
@@ -191,6 +221,8 @@ const ProjectCard = ({ project, index }) => {
               alignItems: 'center',
               transform: isHovered ? 'translateZ(50px)' : 'translateZ(0)',
               transition: 'transform 0.3s ease',
+              pt: 1,
+              borderTop: '1px solid rgba(0,245,255,0.1)',
             }}
           >
             <Box sx={{ display: 'flex', gap: 1 }}>
@@ -203,9 +235,11 @@ const ProjectCard = ({ project, index }) => {
                     color: '#00f5ff',
                     background: isHovered ? 'rgba(0, 245, 255, 0.1)' : 'transparent',
                     transition: 'all 0.3s ease',
+                    border: '1px solid rgba(0,245,255,0.3)',
                     '&:hover': {
                       background: 'rgba(0, 245, 255, 0.2)',
                       transform: 'scale(1.1)',
+                      boxShadow: '0 0 15px rgba(0,245,255,0.3)',
                     },
                   }}
                 >
@@ -221,9 +255,11 @@ const ProjectCard = ({ project, index }) => {
                     color: '#00f5ff',
                     background: isHovered ? 'rgba(0, 245, 255, 0.1)' : 'transparent',
                     transition: 'all 0.3s ease',
+                    border: '1px solid rgba(0,245,255,0.3)',
                     '&:hover': {
                       background: 'rgba(0, 245, 255, 0.2)',
                       transform: 'scale(1.1)',
+                      boxShadow: '0 0 15px rgba(0,245,255,0.3)',
                     },
                   }}
                 >
@@ -244,8 +280,13 @@ const ProjectCard = ({ project, index }) => {
                 sx={{
                   color: '#ff0099',
                   cursor: 'pointer',
-                  textShadow: isHovered ? '0 0 10px rgba(255,0,153,0.5)' : 'none',
+                  textShadow: isHovered ? '0 0 20px rgba(255,0,153,0.8)' : 'none',
                   transition: 'all 0.3s ease',
+                  fontWeight: 600,
+                  letterSpacing: '0.1em',
+                  '&:hover': {
+                    color: '#ff3366',
+                  },
                 }}
               >
                 Learn More
@@ -254,7 +295,7 @@ const ProjectCard = ({ project, index }) => {
           </Box>
         </Box>
 
-        {/* Glowing dots in corners when hovered */}
+        {/* Enhanced glowing dots in corners when hovered */}
         {isHovered && (
           <>
             {[...Array(4)].map((_, i) => (
@@ -262,16 +303,17 @@ const ProjectCard = ({ project, index }) => {
                 key={i}
                 sx={{
                   position: 'absolute',
-                  width: '4px',
-                  height: '4px',
+                  width: '6px',
+                  height: '6px',
                   background: '#00f5ff',
                   borderRadius: '50%',
-                  boxShadow: '0 0 10px #00f5ff',
+                  boxShadow: '0 0 15px #00f5ff, 0 0 30px #00f5ff',
+                  animation: 'pulse 2s infinite',
                   ...{
-                    0: { top: '10px', left: '10px' },
-                    1: { top: '10px', right: '10px' },
-                    2: { bottom: '10px', left: '10px' },
-                    3: { bottom: '10px', right: '10px' },
+                    0: { top: '15px', left: '15px' },
+                    1: { top: '15px', right: '15px' },
+                    2: { bottom: '15px', left: '15px' },
+                    3: { bottom: '15px', right: '15px' },
                   }[i],
                 }}
               />
@@ -325,8 +367,19 @@ const Projects = () => {
       sx={{
         py: 10,
         minHeight: '100vh',
-        background: 'linear-gradient(180deg, rgba(5,7,20,1) 0%, rgba(10,15,45,0.8) 100%)',
+        background: 'linear-gradient(180deg, rgba(5,7,20,1) 0%, rgba(10,15,45,0.9) 50%, rgba(5,7,20,1) 100%)',
         perspective: '1000px',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '200px',
+          background: 'linear-gradient(180deg, transparent, rgba(0,245,255,0.05), transparent)',
+          transform: 'translateY(-50%)',
+        },
       }}
     >
       <Container maxWidth="lg">
@@ -344,7 +397,20 @@ const Projects = () => {
               backgroundClip: 'text',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
-              textShadow: '0 0 20px rgba(0,245,255,0.3)',
+              textShadow: '0 0 30px rgba(0,245,255,0.3)',
+              fontWeight: 700,
+              letterSpacing: '0.1em',
+              position: 'relative',
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                bottom: '-10px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100px',
+                height: '2px',
+                background: 'linear-gradient(90deg, transparent, #00f5ff, transparent)',
+              },
             }}
           >
             Projects
@@ -369,9 +435,9 @@ const Projects = () => {
                 <Box
                   onClick={() => setSelectedFilter(filter)}
                   sx={{
-                    px: 3,
-                    py: 1,
-                    borderRadius: '20px',
+                    px: 4,
+                    py: 1.5,
+                    borderRadius: '25px',
                     cursor: 'pointer',
                     background: selectedFilter === filter
                       ? 'linear-gradient(45deg, rgba(0,245,255,0.2), rgba(255,0,153,0.2))'
@@ -381,9 +447,12 @@ const Projects = () => {
                     color: selectedFilter === filter ? '#00f5ff' : 'white',
                     textTransform: 'capitalize',
                     transition: 'all 0.3s ease',
+                    fontWeight: 500,
+                    letterSpacing: '0.05em',
                     '&:hover': {
                       borderColor: '#00f5ff',
-                      boxShadow: '0 0 10px rgba(0,245,255,0.3)',
+                      boxShadow: '0 0 20px rgba(0,245,255,0.3)',
+                      background: 'rgba(0,245,255,0.1)',
                     },
                   }}
                 >
@@ -403,6 +472,17 @@ const Projects = () => {
           </Grid>
         </motion.div>
       </Container>
+
+      {/* Add a global style for the pulse animation */}
+      <style>
+        {`
+          @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+          }
+        `}
+      </style>
     </Box>
   );
 };
