@@ -1,9 +1,74 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Box, Typography } from '@mui/material';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 
 const SkillsOrbit = () => {
-  const [selectedSkill, setSelectedSkill] = useState(null);
+  const [hoveredSkill, setHoveredSkill] = useState(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const containerRef = useRef(null);
+  const particlesRef = useRef([]);
+
+  // Mouse movement tracking
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const smoothMouseX = useSpring(mouseX, { stiffness: 300, damping: 30 });
+  const smoothMouseY = useSpring(mouseY, { stiffness: 300, damping: 30 });
+
+  // Create particles
+  useEffect(() => {
+    particlesRef.current = Array.from({ length: 30 }, () => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      size: Math.random() * 3 + 1,
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: (Math.random() - 0.5) * 0.5,
+    }));
+  }, []);
+
+  // Mouse movement handler
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      const container = containerRef.current;
+      if (!container) return;
+      
+      const rect = container.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      setMousePosition({ x, y });
+      mouseX.set(x);
+      mouseY.set(y);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [mouseX, mouseY]);
+
+  // Particle animation
+  useEffect(() => {
+    let animationFrame;
+    
+    const animateParticles = () => {
+      particlesRef.current = particlesRef.current.map(particle => {
+        // Update position
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+
+        // Wrap around screen
+        if (particle.x < 0) particle.x = window.innerWidth;
+        if (particle.x > window.innerWidth) particle.x = 0;
+        if (particle.y < 0) particle.y = window.innerHeight;
+        if (particle.y > window.innerHeight) particle.y = 0;
+
+        return particle;
+      });
+
+      animationFrame = requestAnimationFrame(animateParticles);
+    };
+
+    animateParticles();
+    return () => cancelAnimationFrame(animationFrame);
+  }, []);
 
   const skills = [
     {
@@ -88,8 +153,16 @@ const SkillsOrbit = () => {
     };
   };
 
+  // Calculate rotation based on mouse position
+  const calculateRotation = (x, y, mouseX, mouseY) => {
+    const deltaX = mouseX - x;
+    const deltaY = mouseY - y;
+    return Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+  };
+
   return (
     <Box
+      ref={containerRef}
       sx={{
         position: 'relative',
         minHeight: '600px',
@@ -97,8 +170,34 @@ const SkillsOrbit = () => {
         justifyContent: 'center',
         alignItems: 'center',
         perspective: '1000px',
+        overflow: 'hidden',
       }}
     >
+      {/* Floating particles */}
+      {particlesRef.current.map((particle, index) => (
+        <motion.div
+          key={index}
+          style={{
+            position: 'absolute',
+            left: particle.x,
+            top: particle.y,
+            width: particle.size,
+            height: particle.size,
+            borderRadius: '50%',
+            background: 'rgba(0, 245, 255, 0.3)',
+            zIndex: 0,
+          }}
+          animate={{
+            opacity: [0.2, 0.5, 0.2],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            delay: index * 0.1,
+          }}
+        />
+      ))}
+
       <Box
         sx={{
           position: 'relative',
@@ -107,9 +206,49 @@ const SkillsOrbit = () => {
           height: '600px',
         }}
       >
+        {/* Connecting lines between hexagons */}
+        <svg
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none',
+          }}
+        >
+          {skills.map((skill, i) => {
+            const pos1 = getHexPosition(i);
+            return skills.slice(i + 1).map((_, j) => {
+              const pos2 = getHexPosition(i + j + 1);
+              return (
+                <motion.line
+                  key={`${i}-${j}`}
+                  x1={pos1.x + hexagonSize.width / 2}
+                  y1={pos1.y + hexagonSize.height / 2}
+                  x2={pos2.x + hexagonSize.width / 2}
+                  y2={pos2.y + hexagonSize.height / 2}
+                  stroke={skill.color}
+                  strokeWidth="1"
+                  strokeOpacity="0.2"
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 1.5, delay: i * 0.1 }}
+                />
+              );
+            });
+          })}
+        </svg>
+
         {skills.map((skill, index) => {
           const pos = getHexPosition(index);
-          const isSelected = selectedSkill === skill.name;
+          const isHovered = hoveredSkill === skill.name;
+          const rotation = calculateRotation(
+            pos.x + hexagonSize.width / 2,
+            pos.y + hexagonSize.height / 2,
+            mousePosition.x,
+            mousePosition.y
+          );
 
           return (
             <motion.div
@@ -120,8 +259,10 @@ const SkillsOrbit = () => {
                 scale: 1,
                 x: pos.x,
                 y: pos.y,
-                rotateX: isSelected ? 0 : 20,
-                rotateY: isSelected ? 0 : -20,
+                rotateX: isHovered ? 0 : 20,
+                rotateY: isHovered ? 0 : -20,
+                rotateZ: isHovered ? 0 : rotation / 10, // Subtle rotation following mouse
+                zIndex: isHovered ? 2 : 1,
               }}
               transition={{
                 type: 'spring',
@@ -129,7 +270,8 @@ const SkillsOrbit = () => {
                 damping: 20,
                 delay: index * 0.1,
               }}
-              onClick={() => setSelectedSkill(isSelected ? null : skill.name)}
+              onHoverStart={() => setHoveredSkill(skill.name)}
+              onHoverEnd={() => setHoveredSkill(null)}
               style={{
                 position: 'absolute',
                 width: hexagonSize.width,
@@ -148,119 +290,149 @@ const SkillsOrbit = () => {
                   justifyContent: 'center',
                   background: `linear-gradient(135deg, rgba(10, 15, 45, 0.4), rgba(10, 15, 45, 0.2))`,
                   backdropFilter: 'blur(10px)',
-                  border: `2px solid ${skill.color}40`,
+                  border: `2px solid ${isHovered ? skill.color : skill.color + '40'}`,
                   transition: 'all 0.3s ease',
                   clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-                  '&:hover': {
-                    border: `2px solid ${skill.color}`,
-                    boxShadow: `0 0 20px ${skill.color}40`,
-                    transform: 'translateZ(10px)',
+                  boxShadow: isHovered ? `0 0 30px ${skill.color}40` : 'none',
+                  transform: isHovered ? 'translateZ(20px)' : 'translateZ(0)',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    inset: -2,
+                    padding: 2,
+                    background: `linear-gradient(135deg, ${skill.color}40, transparent)`,
+                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                    WebkitMaskComposite: 'xor',
+                    maskComposite: 'exclude',
+                    opacity: isHovered ? 1 : 0,
+                    transition: 'opacity 0.3s ease',
                   },
                 }}
               >
-                <Typography variant="h3" sx={{ mb: 1 }}>
-                  {skill.icon}
-                </Typography>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    color: skill.color,
-                    textShadow: `0 0 10px ${skill.color}40`,
-                    textAlign: 'center',
+                <motion.div
+                  animate={{
+                    scale: isHovered ? 1.1 : 1,
+                    y: isHovered ? -5 : 0,
                   }}
+                  transition={{ duration: 0.2 }}
                 >
-                  {skill.name}
-                </Typography>
+                  <Typography variant="h3" sx={{ mb: 1 }}>
+                    {skill.icon}
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      color: skill.color,
+                      textShadow: `0 0 10px ${skill.color}40`,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {skill.name}
+                  </Typography>
+                </motion.div>
+
+                {/* Glowing orbs around hexagon when hovered */}
+                {isHovered && (
+                  <>
+                    {[...Array(6)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        style={{
+                          position: 'absolute',
+                          width: 10,
+                          height: 10,
+                          borderRadius: '50%',
+                          background: skill.color,
+                          filter: 'blur(5px)',
+                        }}
+                        animate={{
+                          rotate: [0, 360],
+                          scale: [1, 1.2, 1],
+                          opacity: [0.3, 0.6, 0.3],
+                        }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          delay: i * 0.5,
+                        }}
+                      />
+                    ))}
+                  </>
+                )}
               </Box>
+
+              <AnimatePresence>
+                {isHovered && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 20, scale: 0.8 }}
+                    transition={{ duration: 0.2 }}
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: '250px',
+                      zIndex: 10,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        background: 'rgba(10, 15, 45, 0.95)',
+                        backdropFilter: 'blur(20px)',
+                        borderRadius: '15px',
+                        p: 3,
+                        border: `2px solid ${skill.color}`,
+                        boxShadow: `0 0 30px ${skill.color}40`,
+                        mt: 2,
+                      }}
+                    >
+                      {skill.items.map((item, index) => (
+                        <motion.div
+                          key={item.name}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                        >
+                          <Box sx={{ mb: 2 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                              <Typography>{item.name}</Typography>
+                              <Typography sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                                {item.level}%
+                              </Typography>
+                            </Box>
+                            <Box
+                              sx={{
+                                height: '4px',
+                                background: 'rgba(255,255,255,0.1)',
+                                borderRadius: '2px',
+                                overflow: 'hidden',
+                              }}
+                            >
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${item.level}%` }}
+                                transition={{ duration: 0.5 }}
+                                style={{
+                                  height: '100%',
+                                  background: skill.color,
+                                  borderRadius: '2px',
+                                }}
+                              />
+                            </Box>
+                          </Box>
+                        </motion.div>
+                      ))}
+                    </Box>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           );
         })}
 
-        <AnimatePresence>
-          {selectedSkill && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.3 }}
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                zIndex: 10,
-                width: '300px',
-              }}
-            >
-              <Box
-                sx={{
-                  background: 'rgba(10, 15, 45, 0.95)',
-                  backdropFilter: 'blur(20px)',
-                  borderRadius: '15px',
-                  p: 3,
-                  border: `2px solid ${skills.find(s => s.name === selectedSkill)?.color}`,
-                  boxShadow: `0 0 30px ${skills.find(s => s.name === selectedSkill)?.color}40`,
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
-                  <Typography variant="h4">
-                    {skills.find(s => s.name === selectedSkill)?.icon}
-                  </Typography>
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      color: skills.find(s => s.name === selectedSkill)?.color,
-                      textShadow: `0 0 10px ${skills.find(s => s.name === selectedSkill)?.color}40`,
-                    }}
-                  >
-                    {selectedSkill}
-                  </Typography>
-                </Box>
-
-                {skills
-                  .find(s => s.name === selectedSkill)
-                  ?.items.map((item, index) => (
-                    <motion.div
-                      key={item.name}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                    >
-                      <Box sx={{ mb: 2 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                          <Typography>{item.name}</Typography>
-                          <Typography sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                            {item.level}%
-                          </Typography>
-                        </Box>
-                        <Box
-                          sx={{
-                            height: '4px',
-                            background: 'rgba(255,255,255,0.1)',
-                            borderRadius: '2px',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${item.level}%` }}
-                            transition={{ duration: 1, delay: index * 0.1 }}
-                            style={{
-                              height: '100%',
-                              background: skills.find(s => s.name === selectedSkill)?.color,
-                              borderRadius: '2px',
-                            }}
-                          />
-                        </Box>
-                      </Box>
-                    </motion.div>
-                  ))}
-              </Box>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Background glow effect */}
+        {/* Enhanced background glow effect */}
         <Box
           sx={{
             position: 'absolute',
@@ -271,7 +443,7 @@ const SkillsOrbit = () => {
             height: '100%',
             background: 'radial-gradient(circle, rgba(0,245,255,0.1) 0%, transparent 70%)',
             pointerEvents: 'none',
-            opacity: selectedSkill ? 0.8 : 0.4,
+            opacity: hoveredSkill ? 0.8 : 0.4,
             transition: 'opacity 0.3s ease',
           }}
         />
