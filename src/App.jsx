@@ -4,6 +4,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import throttle from 'lodash/throttle';
 import Navbar from './components/Navbar';
+import Cursor from './components/Cursor';
 
 // Lazy load sections
 const Hero = lazy(() => import('./sections/Hero'));
@@ -164,6 +165,7 @@ function App() {
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <Router>
+        {!isMobile && <Cursor />}
         <Navbar />
         <Suspense fallback={<LoadingFallback />}>
           <div style={{ position: 'relative', minHeight: '100vh' }}>
