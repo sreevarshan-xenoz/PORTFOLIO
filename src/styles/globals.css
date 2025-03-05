@@ -6,17 +6,6 @@
   box-sizing: border-box;
 }
 
-/* Only hide cursor on desktop */
-@media (min-width: 768px) {
-  body {
-    cursor: none !important;
-  }
-
-  a, button, [data-hoverable] {
-    cursor: none !important;
-  }
-}
-
 body {
   background-color: #050714;
   color: #ffffff;

@@ -1,26 +1,40 @@
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { ThemeProvider, createTheme, CssBaseline, Box, Typography } from '@mui/material';
 import { BrowserRouter as Router } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import Hero from './sections/Hero';
-import About from './sections/About';
-import Projects from './sections/Projects';
-import Contact from './sections/Contact';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { motion } from 'framer-motion';
+import throttle from 'lodash/throttle';
 import Navbar from './components/Navbar';
-import Cursor from './components/Cursor';
-import ParticlesBackground from './components/ParticlesBackground';
 
-const darkTheme = createTheme({
+// Lazy load sections
+const Hero = lazy(() => import('./sections/Hero'));
+const About = lazy(() => import('./sections/About'));
+const Projects = lazy(() => import('./sections/Projects'));
+const Contact = lazy(() => import('./sections/Contact'));
+const ParticlesBackground = lazy(() => import('./components/ParticlesBackground'));
+
+// Memoize theme creation
+const createAppTheme = () => createTheme({
   palette: {
     mode: 'dark',
     primary: {
       main: '#00f5ff', // Cyber blue
+      light: '#33f7ff',
+      dark: '#00aaad',
+      contrastText: '#050714',
     },
     secondary: {
       main: '#ff0099', // Neon pink
+      light: '#ff33ad',
+      dark: '#b3006b',
+      contrastText: '#ffffff',
     },
     background: {
       default: '#050714', // Deep space black
       paper: '#0a0f2d',
+    },
+    text: {
+      primary: '#ffffff',
+      secondary: 'rgba(255, 255, 255, 0.7)',
     },
   },
   typography: {
@@ -28,6 +42,18 @@ const darkTheme = createTheme({
     h1: {
       fontWeight: 700,
       letterSpacing: '0.2em',
+    },
+    h2: {
+      fontWeight: 600,
+      letterSpacing: '0.1em',
+    },
+    h3: {
+      fontWeight: 600,
+      letterSpacing: '0.05em',
+    },
+    button: {
+      letterSpacing: '0.1em',
+      fontWeight: 500,
     },
   },
   components: {
@@ -37,6 +63,7 @@ const darkTheme = createTheme({
           borderRadius: '0',
           position: 'relative',
           overflow: 'hidden',
+          textTransform: 'uppercase',
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -50,48 +77,105 @@ const darkTheme = createTheme({
         },
       },
     },
+    MuiCssBaseline: {
+      styleOverrides: {
+        '::selection': {
+          backgroundColor: '#00f5ff',
+          color: '#050714',
+        },
+        '::-webkit-scrollbar': {
+          width: '8px',
+        },
+        '::-webkit-scrollbar-track': {
+          background: '#0a0f2d',
+        },
+        '::-webkit-scrollbar-thumb': {
+          background: '#00f5ff',
+          borderRadius: '4px',
+          '&:hover': {
+            background: '#ff0099',
+          },
+        },
+      },
+    },
   },
 });
 
+const darkTheme = createAppTheme();
+
+// Loading component
+const LoadingFallback = () => (
+  <Box
+    sx={{
+      height: '100vh',
+      width: '100vw',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      background: darkTheme.palette.background.default,
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      zIndex: 9999,
+    }}
+  >
+    <motion.div
+      animate={{
+        scale: [1, 1.2, 1],
+        opacity: [0.5, 1, 0.5],
+      }}
+      transition={{
+        duration: 1.5,
+        repeat: Infinity,
+        ease: 'easeInOut',
+      }}
+    >
+      <Typography
+        variant="h4"
+        sx={{
+          color: darkTheme.palette.primary.main,
+          textShadow: `0 0 10px ${darkTheme.palette.primary.main}`,
+        }}
+      >
+        Loading...
+      </Typography>
+    </motion.div>
+  </Box>
+);
+
 function App() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isMobile, setIsMobile] = useState(false);
 
+  // Throttled resize handler
   useEffect(() => {
-    const checkMobile = () => {
+    const handleResize = throttle(() => {
       setIsMobile(window.innerWidth < 768);
+    }, 250);
+
+    handleResize();
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      handleResize.cancel();
     };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  useEffect(() => {
-    if (isMobile) return;
-
-    const handleMouseMove = (e) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [isMobile]);
 
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <Router>
-        <div style={{ position: 'relative', minHeight: '100vh' }}>
-          <ParticlesBackground />
-          {!isMobile && <Cursor mousePosition={mousePosition} />}
-          <Navbar />
-          <main>
-            <Hero />
-            <About />
-            <Projects />
-            <Contact />
-          </main>
-        </div>
+        <Navbar />
+        <Suspense fallback={<LoadingFallback />}>
+          <div style={{ position: 'relative', minHeight: '100vh' }}>
+            <ParticlesBackground />
+            <main>
+              <Hero />
+              <About />
+              <Projects />
+              <Contact />
+            </main>
+          </div>
+        </Suspense>
       </Router>
     </ThemeProvider>
   );

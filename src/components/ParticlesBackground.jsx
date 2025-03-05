@@ -1,78 +1,83 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
+import throttle from 'lodash/throttle';
 
 const ParticlesBackground = () => {
   const canvasRef = useRef(null);
   const particlesRef = useRef([]);
   const frameRef = useRef(0);
+  const contextRef = useRef(null);
+
+  // Memoize particle creation
+  const createParticles = useMemo(() => (width, height) => {
+    const particleCount = Math.min(20, Math.floor((width * height) / 70000)); // Reduced count
+    return Array.from({ length: particleCount }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.05, // Reduced velocity
+      vy: (Math.random() - 0.5) * 0.05,
+      size: Math.random() * 2 + 0.5, // Smaller particles
+    }));
+  }, []);
+
+  // Throttled resize handler
+  const handleResize = useMemo(
+    () =>
+      throttle(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        particlesRef.current = createParticles(canvas.width, canvas.height);
+      }, 250),
+    [createParticles]
+  );
 
   useEffect(() => {
-    const isMobile = window.innerWidth < 768;
-    if (isMobile) return; // Don't render on mobile
-
     const canvas = canvasRef.current;
+    if (!canvas || window.innerWidth < 768) return; // Don't render on mobile
+
     const ctx = canvas.getContext('2d', { alpha: true });
+    contextRef.current = ctx;
     
-    // Set initial canvas size
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-
-    class Particle {
-      constructor() {
-        this.init();
-      }
-
-      init() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        // Significantly reduced velocities
-        this.vx = (Math.random() - 0.5) * 0.1;
-        this.vy = (Math.random() - 0.5) * 0.1;
-        this.opacity = Math.random() * 0.3; // Reduced opacity
-      }
-
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-
-        // Wrap around screen instead of bouncing (more efficient)
-        if (this.x < 0) this.x = canvas.width;
-        if (this.x > canvas.width) this.x = 0;
-        if (this.y < 0) this.y = canvas.height;
-        if (this.y > canvas.height) this.y = 0;
-      }
-    }
-
-    // Create particles
-    const particleCount = Math.min(30, Math.floor((canvas.width * canvas.height) / 50000));
-    const particles = Array.from({ length: particleCount }, () => new Particle());
-    particlesRef.current = particles;
-
-    // Pre-calculate some values
-    const maxDistance = 120; // Reduced connection distance
-    const maxDistanceSquared = maxDistance * maxDistance;
+    particlesRef.current = createParticles(canvas.width, canvas.height);
 
     const drawParticles = () => {
+      if (!contextRef.current) return;
+      const ctx = contextRef.current;
+      const particles = particlesRef.current;
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Create off-screen buffer for particles
-      const particleBuffer = new Path2D();
-      
+      // Batch particle drawing
+      ctx.beginPath();
       particles.forEach(particle => {
-        particle.update();
-        particleBuffer.moveTo(particle.x, particle.y);
-        particleBuffer.arc(particle.x, particle.y, 1, 0, Math.PI * 2);
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+
+        // Efficient screen wrapping
+        if (particle.x < 0) particle.x = canvas.width;
+        else if (particle.x > canvas.width) particle.x = 0;
+        if (particle.y < 0) particle.y = canvas.height;
+        else if (particle.y > canvas.height) particle.y = 0;
+
+        ctx.moveTo(particle.x, particle.y);
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
       });
 
-      // Draw all particles at once
       ctx.fillStyle = 'rgba(0, 245, 255, 0.3)';
-      ctx.fill(particleBuffer);
+      ctx.fill();
 
-      // Only draw connections every 2 frames
+      // Draw connections every other frame
       if (frameRef.current % 2 === 0) {
-        // Draw connections
         ctx.beginPath();
         ctx.strokeStyle = 'rgba(0, 245, 255, 0.1)';
         ctx.lineWidth = 0.5;
+
+        const maxDistance = 100;
+        const maxDistanceSquared = maxDistance * maxDistance;
 
         for (let i = 0; i < particles.length; i++) {
           for (let j = i + 1; j < particles.length; j++) {
@@ -92,29 +97,15 @@ const ParticlesBackground = () => {
       frameRef.current = requestAnimationFrame(drawParticles);
     };
 
-    // Start animation
     frameRef.current = requestAnimationFrame(drawParticles);
-
-    // Efficient resize handler
-    let resizeTimeout;
-    const handleResize = () => {
-      if (resizeTimeout) {
-        cancelAnimationFrame(resizeTimeout);
-      }
-      resizeTimeout = setTimeout(() => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        particles.forEach(particle => particle.init());
-      }, 250);
-    };
-
     window.addEventListener('resize', handleResize, { passive: true });
 
     return () => {
       cancelAnimationFrame(frameRef.current);
       window.removeEventListener('resize', handleResize);
+      handleResize.cancel();
     };
-  }, []);
+  }, [createParticles, handleResize]);
 
   return (
     <canvas

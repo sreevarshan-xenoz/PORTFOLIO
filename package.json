@@ -15,12 +15,14 @@
     "@mui/icons-material": "^5.15.7",
     "@mui/material": "^5.15.7",
     "framer-motion": "^10.18.0",
+    "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-intersection-observer": "^9.15.1",
     "react-router-dom": "^6.21.3"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.16",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.1",
